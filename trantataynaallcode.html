@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <title>Tran Ta Tay Na All Code</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f5e3bf;
+      font-family: "Segoe UI", sans-serif;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+    .frame-stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: #f5e3bf;
+      overscroll-behavior: none;
+    }
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+    }
+    .mobile-shell,
+    .mobile-shell.show {
+      display: none !important;
+    }
+    .mobile-credit {
+      position: absolute;
+      right: 10px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+      z-index: 110;
+      max-width: min(68vw, 420px);
+      padding: 5px 8px;
+      border-radius: 10px;
+      background: rgba(255, 248, 237, 0.82);
+      color: #6b3d16;
+      font-size: 10px;
+      line-height: 1.35;
+      text-align: right;
+      box-shadow: 0 10px 24px rgba(86, 48, 18, 0.12);
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+    @media (max-width: 900px) and (orientation: portrait), (pointer: coarse) and (max-aspect-ratio: 9/10) {
+      .frame-stage.mobile-landscape {
+        width: 100vh;
+        height: 100vw;
+        top: 50%;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        transform: translate(-50%, -50%) rotate(90deg);
+        transform-origin: center center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="frameStage" class="frame-stage">
+    <iframe id="appFrame"></iframe>
+    <div id="mobileShell" class="mobile-shell"></div>
+    <div class="mobile-credit">Trần Sơn - Trần Tả Tây Nạ - Chi Ba - Trần Lợi - Nhánh Hai</div>
+  </div>
+  <script>
+    const SUPABASE_URL = 'https://fvusljteqeoytdcoxaao.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ2dXNsanRlcWVveXRkY294YWFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDM3MTksImV4cCI6MjA5MDUxOTcxOX0.-6wTksnJflmerln8aajmXS74FH8OXgJBqlNSp4CNPZ0';
+    const TABLE_NAME = 'tree_documents';
+    const DOCUMENT_ID = 'classic-main';
+    const LOCAL_STORAGE_KEY = 'background-banner-editor-3-data';
+    const EMBEDDED_EDITOR_HTML_GZIP_BASE64 = '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';
+
+    const frame = document.getElementById('appFrame');
+    const frameStage = document.getElementById('frameStage');
+
+    let editorWindowRef = null;
+
+    function isMobileMode() {
+      return window.matchMedia('(max-width: 900px)').matches || window.matchMedia('(pointer: coarse)').matches;
+    }
+
+    function isPortraitMobile() {
+      return isMobileMode() && window.matchMedia('(orientation: portrait)').matches;
+    }
+
+    function injectBaseStyles(doc) {
+      if (!doc || doc.getElementById('unified-sync-style')) return;
+      const style = doc.createElement('style');
+      style.id = 'unified-sync-style';
+      style.textContent = `
+        .hint { display: none !important; }
+        .toolbox-drag-btn {
+          border: 1px solid rgba(112, 69, 31, 0.18);
+          background: #fffaf0;
+          color: #6b3d16;
+          height: 32px;
+          padding: 0 12px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: grab;
+        }
+        .toolbox.dragging .toolbox-drag-btn { cursor: grabbing; }
+        .stage {
+          height: 100vh !important;
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+          overscroll-behavior: contain !important;
+        }
+        @media (min-width: 901px) and (pointer: fine) {
+          html, body {
+            overflow: hidden !important;
+          }
+          .topbar .zoom-btn {
+            display: inline-flex !important;
+          }
+        }
+        @media (max-width: 900px), (pointer: coarse) {
+          html, body {
+            overscroll-behavior: none !important;
+            touch-action: none !important;
+          }
+          .banner {
+            display: block !important;
+            width: clamp(50px, 10vw, 76px) !important;
+            top: 10px !important;
+          }
+          .banner-left {
+            left: 20px !important;
+            clip-path: inset(0 12% 0 13%) !important;
+          }
+          .banner-right {
+            right: 20px !important;
+            clip-path: inset(0 13% 0 12%) !important;
+          }
+          .topbar {
+            display: none !important;
+          }
+          .topbar .zoom-btn,
+          .zoom-btn,
+          #zoomInBtn,
+          #zoomOutBtn,
+          #zoomResetBtn {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+          .auth-btn,
+          .tool-btn,
+          .toolbox-drag-btn {
+            height: 28px !important;
+            padding: 0 10px !important;
+            font-size: 11px !important;
+          }
+          .status,
+          .save-state,
+          .mode-pill {
+            height: 28px !important;
+            padding: 0 8px !important;
+            font-size: 11px !important;
+          }
+        }
+      `;
+      doc.head.appendChild(style);
+    }
+
+    function supabaseHeaders(extra = {}) {
+      return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, ...extra };
+    }
+
+    function sanitizeBox(box) {
+      return {
+        id: String(box.id || ''), x: Number(box.x) || 0, y: Number(box.y) || 0,
+        width: Math.max(24, Number(box.width) || 220), height: Math.max(24, Number(box.height) || 96),
+        text: String(box.text || ''), fontSize: Math.max(10, Number(box.fontSize) || 20),
+        background: /^#[0-9a-fA-F]{6}$/.test(box.background) ? box.background : '#fff6d9',
+        borderColor: /^#[0-9a-fA-F]{6}$/.test(box.borderColor) ? box.borderColor : '#8b531f',
+        textColor: /^#[0-9a-fA-F]{6}$/.test(box.textColor) ? box.textColor : '#5b3416',
+        borderWidth: Math.max(0, Number(box.borderWidth) || 2),
+      };
+    }
+
+    function sanitizeAnchor(anchor) {
+      if (anchor && anchor.kind === 'box') return { kind: 'box', boxId: String(anchor.boxId || ''), side: ['left', 'right', 'top', 'bottom'].includes(anchor.side) ? anchor.side : 'top' };
+      return { kind: 'point', x: Number(anchor?.x) || 0, y: Number(anchor?.y) || 0, side: ['left', 'right', 'top', 'bottom'].includes(anchor?.side) ? anchor.side : 'right' };
+    }
+
+    function sanitizeLine(line) {
+      return { id: String(line.id || ''), start: sanitizeAnchor(line.start), end: sanitizeAnchor(line.end), color: /^#[0-9a-fA-F]{6}$/.test(line.color) ? line.color : '#8b531f', width: Math.max(1, Number(line.width) || 3) };
+    }
+
+    function sanitizePayload(payload) {
+      return {
+        boxes: Array.isArray(payload?.boxes) ? payload.boxes.map(sanitizeBox) : [],
+        lines: Array.isArray(payload?.lines) ? payload.lines.map(sanitizeLine) : [],
+        meta: payload?.meta && typeof payload.meta === 'object' ? payload.meta : {},
+      };
+    }
+
+    async function fetchRemoteDocument() {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(DOCUMENT_ID)}&select=data`, { headers: supabaseHeaders() });
+      if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${await response.text()}`);
+      const rows = await response.json();
+      return rows[0]?.data || null;
+    }
+
+    async function saveRemoteDocument(payload) {
+      const cleanPayload = sanitizePayload(payload);
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
+        method: 'POST',
+        headers: supabaseHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify([{ id: DOCUMENT_ID, data: cleanPayload }]),
+      });
+      if (!response.ok) throw new Error(`Save failed: ${response.status} ${await response.text()}`);
+      return cleanPayload;
+    }
+
+    async function verifyRemoteDocument(payload) {
+      const expected = sanitizePayload(payload);
+      const remote = sanitizePayload(await fetchRemoteDocument());
+      if (JSON.stringify(expected) !== JSON.stringify(remote)) throw new Error('Supabase trả về dữ liệu khác với dữ liệu vừa lưu');
+    }
+
+    async function decodeEmbeddedEditorHtml() {
+      const binary = atob(EMBEDDED_EDITOR_HTML_GZIP_BASE64.replace(/\s+/g, ''));
+      const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      if (!('DecompressionStream' in window)) {
+        throw new Error('Trinh duyet nay khong ho tro giai nen file all-code');
+      }
+      const stream = new Response(bytes).body.pipeThrough(new DecompressionStream('gzip'));
+      return await new Response(stream).text();
+    }
+
+    async function loadEmbeddedEditor() {
+      frame.srcdoc = await decodeEmbeddedEditorHtml();
+    }
+
+    function injectAlignmentPatch(win) {
+      win.eval(`
+        if (!window.__horizontalAlignPatched) {
+          window.__horizontalAlignPatched = true;
+          const SNAP_THRESHOLD = 10;
+          const guideLayer = document.createElement('div');
+          guideLayer.style.position = 'absolute';
+          guideLayer.style.inset = '0';
+          guideLayer.style.pointerEvents = 'none';
+          guideLayer.style.zIndex = '30';
+
+          const guideLine = document.createElement('div');
+          guideLine.style.position = 'absolute';
+          guideLine.style.height = '0';
+          guideLine.style.borderTop = '2px dashed rgba(47, 128, 237, 0.9)';
+          guideLine.style.display = 'none';
+          guideLayer.appendChild(guideLine);
+          overlay.appendChild(guideLayer);
+
+          function hideAlignGuide() {
+            guideLine.style.display = 'none';
+          }
+
+          function showAlignGuide(y, left, right) {
+            guideLine.style.display = 'block';
+            guideLine.style.top = y + 'px';
+            guideLine.style.left = left + 'px';
+            guideLine.style.width = Math.max(0, right - left) + 'px';
+          }
+
+          const originalMoveActiveBox = moveActiveBox;
+          moveActiveBox = function(event) {
+            const box = boxes.find((item) => item.id === activeBoxId);
+            if (!box) return originalMoveActiveBox(event);
+            const proposedX = Math.max(0, dragOriginX + (event.clientX - dragStartX) / scale);
+            let proposedY = Math.max(0, dragOriginY + (event.clientY - dragStartY) / scale);
+            const currentLines = [
+              { key: 'top', value: proposedY },
+              { key: 'center', value: proposedY + box.height / 2 },
+              { key: 'bottom', value: proposedY + box.height },
+            ];
+            let best = null;
+            boxes.forEach((other) => {
+              if (other.id === activeBoxId) return;
+              const otherLines = [
+                { key: 'top', value: other.y },
+                { key: 'center', value: other.y + other.height / 2 },
+                { key: 'bottom', value: other.y + other.height },
+              ];
+              currentLines.forEach((currentLine) => {
+                otherLines.forEach((otherLine) => {
+                  const delta = otherLine.value - currentLine.value;
+                  const distance = Math.abs(delta);
+                  if (distance > SNAP_THRESHOLD) return;
+                  if (!best || distance < best.distance) {
+                    best = {
+                      distance,
+                      snappedY: proposedY + delta,
+                      lineY: otherLine.value,
+                      left: Math.min(proposedX, other.x),
+                      right: Math.max(proposedX + box.width, other.x + other.width),
+                    };
+                  }
+                });
+              });
+            });
+            box.x = proposedX;
+            box.y = best ? Math.max(0, best.snappedY) : proposedY;
+            setDirty(true);
+            renderScene();
+            if (best) showAlignGuide(best.lineY, best.left, best.right);
+            else hideAlignGuide();
+          };
+          const originalStopBoxInteractions = stopBoxInteractions;
+          stopBoxInteractions = function() {
+            hideAlignGuide();
+            return originalStopBoxInteractions();
+          };
+        }
+      `);
+    }
+    function patchEditor(editorWin) {
+      editorWin.eval(`
+        if (!window.__desktopEditMobileViewPatchV11) {
+          window.__desktopEditMobileViewPatchV11 = true;
+          const LOCAL_STORAGE_KEY = '${LOCAL_STORAGE_KEY}';
+          let isUnifiedMobileViewer = false;
+          let toolboxDragState = null;
+          let coordInputs = null;
+          let mobileDefaultScale = null;
+          let mobileTouchState = null;
+          let runtimeDisplaySpace = null;
+          const classicSetBaseSize = setBaseSize;
+          const classicApplyTransform = applyTransform;
+          const classicZoomAt = zoomAt;
+          const classicLoadData = loadData;
+
+          function getImageSpace() {
+            const width = image.naturalWidth || image.width || window.innerWidth;
+            const height = image.naturalHeight || image.height || window.innerHeight;
+            return { width, height };
+          }
+
+          function getDisplaySpace() {
+            if (isUnifiedMobileViewer) return getImageSpace();
+            return {
+              width: window.innerWidth,
+              height: image.offsetHeight || image.naturalHeight || window.innerHeight,
+            };
+          }
+
+          function getSafeSpace(space, fallback) {
+            if (space && Number(space.width) > 0 && Number(space.height) > 0) {
+              return { width: Number(space.width), height: Number(space.height) };
+            }
+            return fallback;
+          }
+
+          function scalePoint(point, scaleX, scaleY) {
+            return { ...point, x: (point.x || 0) * scaleX, y: (point.y || 0) * scaleY };
+          }
+
+          function scaleAnchor(anchor, scaleX, scaleY) {
+            if (!anchor) return anchor;
+            if (anchor.kind === 'point') return scalePoint(anchor, scaleX, scaleY);
+            return { ...anchor };
+          }
+
+          function scaleState(state, sourceSpace, targetSpace) {
+            const source = getSafeSpace(sourceSpace, getImageSpace());
+            const target = getSafeSpace(targetSpace, source);
+            const scaleX = target.width / source.width;
+            const scaleY = target.height / source.height;
+            return {
+              boxes: (state.boxes || []).map((box) => ({
+                ...box,
+                x: box.x * scaleX,
+                y: box.y * scaleY,
+                width: box.width * scaleX,
+                height: box.height * scaleY,
+                fontSize: box.fontSize * Math.min(scaleX, scaleY),
+                borderWidth: Math.max(1, box.borderWidth * Math.min(scaleX, scaleY)),
+              })),
+              lines: (state.lines || []).map((line) => ({
+                ...line,
+                start: scaleAnchor(line.start, scaleX, scaleY),
+                end: scaleAnchor(line.end, scaleX, scaleY),
+                width: Math.max(1, line.width * Math.min(scaleX, scaleY)),
+              })),
+            };
+          }
+
+          function exportSceneState() {
+            return {
+              boxes: boxes.map((box) => ({ ...box })),
+              lines: lines.map((line) => ({ ...line })),
+            };
+          }
+
+          function applyStateToScene(state, sourceSpace, targetSpace) {
+            const scaled = scaleState(state, sourceSpace, targetSpace);
+            boxes = scaled.boxes;
+            lines = scaled.lines;
+            runtimeDisplaySpace = getSafeSpace(targetSpace, getDisplaySpace());
+          }
+
+          function normalizeSceneForDisplay(nextDisplaySpace) {
+            const target = getSafeSpace(nextDisplaySpace, getDisplaySpace());
+            const source = getSafeSpace(runtimeDisplaySpace, target);
+            if (Math.abs(source.width - target.width) < 0.5 && Math.abs(source.height - target.height) < 0.5) {
+              runtimeDisplaySpace = target;
+              return;
+            }
+            const scaled = scaleState(exportSceneState(), source, target);
+            boxes = scaled.boxes;
+            lines = scaled.lines;
+            runtimeDisplaySpace = target;
+          }
+
+          function createPersistedPayload() {
+            const displaySpace = getSafeSpace(runtimeDisplaySpace, getDisplaySpace());
+            const imageSpace = getImageSpace();
+            const scaled = scaleState(exportSceneState(), displaySpace, imageSpace);
+            return {
+              boxes: scaled.boxes,
+              lines: scaled.lines,
+              meta: { coordSpace: imageSpace },
+            };
+          }
+
+          function setSyncState(text, isError = false) {
+            if (!saveState) return;
+            saveState.style.display = 'flex';
+            saveState.textContent = text;
+            saveState.style.background = isError ? 'rgba(208, 86, 42, 0.12)' : 'rgba(39, 174, 96, 0.12)';
+            saveState.style.color = isError ? '#9a3d1f' : '#1f7a45';
+            saveState.style.borderColor = isError ? 'rgba(208, 86, 42, 0.22)' : 'rgba(39, 174, 96, 0.22)';
+          }
+
+          function resetMobileViewport() {
+            scale = mobileDefaultScale;
+            panX = 0;
+            panY = 0;
+            clampPan();
+            classicApplyTransform();
+          }
+
+          function clampPan() {
+            const imageWidth = image.naturalWidth || image.width || window.innerWidth;
+            const imageHeight = image.naturalHeight || image.height || window.innerHeight;
+            const viewport = window.top.__mobileViewGetViewportV8 ? window.top.__mobileViewGetViewportV8() : { width: window.innerWidth, height: window.innerHeight };
+            const minPanX = Math.min(0, viewport.width - imageWidth * scale);
+            const minPanY = Math.min(0, viewport.height - imageHeight * scale);
+            panX = Math.max(minPanX, Math.min(0, panX));
+            panY = Math.max(minPanY, Math.min(0, panY));
+          }
+
+          function installToolboxDrag() {
+            const toolbox = document.getElementById('toolbox');
+            const header = toolbox && toolbox.querySelector('.toolbox-header');
+            if (!toolbox || !header || header.querySelector('.toolbox-drag-btn')) return;
+            toolbox.style.position = 'fixed';
+            const dragBtn = document.createElement('button');
+            dragBtn.type = 'button';
+            dragBtn.className = 'toolbox-drag-btn';
+            dragBtn.textContent = 'Di chuyen';
+            header.insertBefore(dragBtn, header.firstChild);
+            dragBtn.addEventListener('pointerdown', (event) => {
+              if (isUnifiedMobileViewer) return;
+              toolboxDragState = {
+                startX: event.clientX,
+                startY: event.clientY,
+                originLeft: toolbox.getBoundingClientRect().left,
+                originTop: toolbox.getBoundingClientRect().top,
+              };
+              toolbox.classList.add('dragging');
+              toolbox.style.left = toolboxDragState.originLeft + 'px';
+              toolbox.style.top = toolboxDragState.originTop + 'px';
+              toolbox.style.right = 'auto';
+              dragBtn.setPointerCapture(event.pointerId);
+              event.preventDefault();
+            });
+            dragBtn.addEventListener('pointermove', (event) => {
+              if (!toolboxDragState) return;
+              const nextLeft = Math.max(8, Math.min(window.innerWidth - toolbox.offsetWidth - 8, toolboxDragState.originLeft + (event.clientX - toolboxDragState.startX)));
+              const nextTop = Math.max(56, Math.min(window.innerHeight - 120, toolboxDragState.originTop + (event.clientY - toolboxDragState.startY)));
+              toolbox.style.left = nextLeft + 'px';
+              toolbox.style.top = nextTop + 'px';
+            });
+            function endDrag(event) {
+              if (!toolboxDragState) return;
+              toolboxDragState = null;
+              toolbox.classList.remove('dragging');
+              try { dragBtn.releasePointerCapture(event.pointerId); } catch {}
+            }
+            dragBtn.addEventListener('pointerup', endDrag);
+            dragBtn.addEventListener('pointercancel', endDrag);
+          }
+
+          function ensureCoordinateInputs() {
+            if (coordInputs) return coordInputs;
+            const toolboxGrid = document.querySelector('.toolbox-grid');
+            const toolboxStateEl = document.getElementById('toolboxState');
+            if (!toolboxGrid || !toolboxStateEl) return null;
+            const wrap = document.createElement('div');
+            wrap.className = 'toolbox-actions';
+            wrap.innerHTML = '<div class="toolbox-row" style="flex:1; min-width:110px;"><label for="boxXInput">Toa do X</label><input id="boxXInput" type="number" step="1" /></div><div class="toolbox-row" style="flex:1; min-width:110px;"><label for="boxYInput">Toa do Y</label><input id="boxYInput" type="number" step="1" /></div>';
+            toolboxGrid.insertBefore(wrap, toolboxStateEl);
+            const xInput = wrap.querySelector('#boxXInput');
+            const yInput = wrap.querySelector('#boxYInput');
+            xInput.addEventListener('input', () => { const box = getSelectedBox(); if (!box) return; updateSelectedBox({ x: Number(xInput.value) || 0 }); });
+            yInput.addEventListener('input', () => { const box = getSelectedBox(); if (!box) return; updateSelectedBox({ y: Number(yInput.value) || 0 }); });
+            coordInputs = { xInput, yInput };
+            return coordInputs;
+          }
+
+          function installMobileTouchHandlers() {
+            if (window.__mobileTouchHandlersInstalled) return;
+            window.__mobileTouchHandlersInstalled = true;
+            window.addEventListener('gesturestart', (event) => { if (!isUnifiedMobileViewer) return; event.preventDefault(); }, { passive: false });
+            window.addEventListener('gesturechange', (event) => { if (!isUnifiedMobileViewer) return; event.preventDefault(); }, { passive: false });
+            window.addEventListener('touchstart', (event) => {
+              if (!isUnifiedMobileViewer) return;
+              if (event.touches.length === 1) {
+                mobileTouchState = { type: 'pan', startX: event.touches[0].clientX, startY: event.touches[0].clientY, basePanX: panX, basePanY: panY };
+              } else if (event.touches.length === 2) {
+                mobileTouchState = {
+                  type: 'pinch', baseScale: scale, basePanX: panX, basePanY: panY,
+                  distance: Math.hypot(event.touches[0].clientX - event.touches[1].clientX, event.touches[0].clientY - event.touches[1].clientY),
+                  centerX: (event.touches[0].clientX + event.touches[1].clientX) / 2,
+                  centerY: (event.touches[0].clientY + event.touches[1].clientY) / 2,
+                };
+                event.preventDefault();
+              }
+            }, { passive: false });
+            window.addEventListener('touchmove', (event) => {
+              if (!isUnifiedMobileViewer || !mobileTouchState) return;
+              if (mobileTouchState.type === 'pan' && event.touches.length === 1) {
+                panX = mobileTouchState.basePanX + (event.touches[0].clientX - mobileTouchState.startX);
+                panY = mobileTouchState.basePanY + (event.touches[0].clientY - mobileTouchState.startY);
+                clampPan();
+                classicApplyTransform();
+                event.preventDefault();
+              } else if (mobileTouchState.type === 'pinch' && event.touches.length === 2) {
+                const distance = Math.hypot(event.touches[0].clientX - event.touches[1].clientX, event.touches[0].clientY - event.touches[1].clientY);
+                const centerX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+                const centerY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+                scale = Math.max(mobileDefaultScale, Math.min(maxScale, mobileTouchState.baseScale * (distance / mobileTouchState.distance)));
+                panX = mobileTouchState.basePanX + (centerX - mobileTouchState.centerX);
+                panY = mobileTouchState.basePanY + (centerY - mobileTouchState.centerY);
+                if (scale <= mobileDefaultScale + 0.0001) {
+                  resetMobileViewport();
+                } else {
+                  clampPan();
+                  classicApplyTransform();
+                }
+                event.preventDefault();
+              }
+            }, { passive: false });
+            window.addEventListener('touchend', () => {
+              if (!isUnifiedMobileViewer) return;
+              if (scale <= mobileDefaultScale + 0.0001) resetMobileViewport();
+              mobileTouchState = null;
+            }, { passive: true });
+          }
+
+          function fitMobileView() {
+            const imageSpace = getImageSpace();
+            canvas.style.width = imageSpace.width + 'px';
+            overlay.style.width = imageSpace.width + 'px';
+            overlay.style.height = imageSpace.height + 'px';
+            linesSvg.setAttribute('viewBox', '0 0 ' + imageSpace.width + ' ' + imageSpace.height);
+            normalizeSceneForDisplay(imageSpace);
+            const viewport = window.top.__mobileViewGetViewportV8 ? window.top.__mobileViewGetViewportV8() : { width: window.innerWidth, height: window.innerHeight };
+            const baseScale = viewport.width / imageSpace.width;
+            minScale = baseScale;
+            maxScale = Math.max(baseScale * 4, 4);
+            scale = baseScale;
+            mobileDefaultScale = baseScale;
+            panX = 0;
+            panY = 0;
+            clampPan();
+            stage.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            classicApplyTransform();
+            renderScene();
+          }
+
+          function fitDesktopClassic() {
+            stage.style.height = window.innerHeight + 'px';
+            stage.style.overflowX = 'hidden';
+            stage.style.overflowY = 'auto';
+            stage.style.overscrollBehavior = 'contain';
+            document.body.style.overflow = 'hidden';
+            if (document.documentElement) document.documentElement.style.overflow = 'hidden';
+            const result = classicSetBaseSize();
+            normalizeSceneForDisplay(getDisplaySpace());
+            scale = minScale;
+            panX = 0;
+            panY = 0;
+            classicApplyTransform();
+            stage.scrollTop = Math.max(0, Math.min(stage.scrollTop, stage.scrollHeight - stage.clientHeight));
+            renderScene();
+            return result;
+          }
+
+          function setViewerLikeMode(active) {
+            isUnifiedMobileViewer = active;
+            const topbar = document.querySelector('.topbar');
+            const toolbox = document.getElementById('toolbox');
+            const miniToolbox = document.getElementById('miniToolbox');
+            const hint = document.querySelector('.hint');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (topbar) topbar.style.display = active ? 'none' : 'flex';
+            if (toolbox) { toolbox.classList.remove('open'); toolbox.style.display = active ? 'none' : ''; }
+            if (miniToolbox) { miniToolbox.classList.remove('show'); miniToolbox.style.display = active ? 'none' : ''; }
+            if (hint) hint.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = active ? 'none' : '';
+            if (logoutBtn) logoutBtn.style.display = active ? 'none' : (logoutBtn.hidden ? 'none' : '');
+            if (active) {
+              lineMode = false;
+              pendingLineStart = null;
+              selectedBoxId = null;
+              selectedLineId = null;
+              renderScene();
+            }
+          }
+
+          const originalSyncToolbox = syncToolbox;
+          syncToolbox = function() {
+            originalSyncToolbox();
+            const controls = ensureCoordinateInputs();
+            if (!controls) return;
+            const box = getSelectedBox();
+            controls.xInput.disabled = !box;
+            controls.yInput.disabled = !box;
+            controls.xInput.value = box ? Math.round(box.x) : '';
+            controls.yInput.value = box ? Math.round(box.y) : '';
+          };
+
+          applyTransform = function() {
+            if (isUnifiedMobileViewer) clampPan();
+            classicApplyTransform();
+          };
+
+          zoomAt = function(nextScale, clientX, clientY) {
+            classicZoomAt(nextScale, clientX, clientY);
+            if (isUnifiedMobileViewer && scale <= mobileDefaultScale + 0.0001) {
+              resetMobileViewport();
+            }
+          };
+
+          setBaseSize = function() {
+            if (isUnifiedMobileViewer) return fitMobileView();
+            const result = classicSetBaseSize();
+            normalizeSceneForDisplay(getDisplaySpace());
+            return result;
+          };
+
+          resetView = function() {
+            if (isUnifiedMobileViewer) return fitMobileView();
+            return fitDesktopClassic();
+          };
+
+          fitInitial = function() {
+            if (isUnifiedMobileViewer) return fitMobileView();
+            return fitDesktopClassic();
+          };
+
+          window.__setUnifiedMobileMode = function(active) {
+            installToolboxDrag();
+            ensureCoordinateInputs();
+            installMobileTouchHandlers();
+            setViewerLikeMode(active);
+            if (active) fitMobileView();
+            else fitDesktopClassic();
+          };
+
+          loadData = async function() {
+            installToolboxDrag();
+            ensureCoordinateInputs();
+            installMobileTouchHandlers();
+            setSyncState('Đang tải cloud...');
+            try {
+              const remote = await window.top.__mobileViewFetchRemoteDocumentV8();
+              if (remote) {
+                const cleanRemote = remote || { boxes: [], lines: [], meta: {} };
+                const sourceSpace = getSafeSpace(cleanRemote.meta && cleanRemote.meta.coordSpace, getImageSpace());
+                const targetSpace = getDisplaySpace();
+                applyStateToScene(cleanRemote, sourceSpace, targetSpace);
+                migrateLines();
+                selectedBoxId = null;
+                selectedLineId = null;
+                renderScene();
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanRemote));
+                setDirty(false);
+                setSyncState('Đã tải cloud');
+                if (isUnifiedMobileViewer) fitMobileView(); else fitDesktopClassic();
+                return;
+              }
+              await classicLoadData();
+              runtimeDisplaySpace = getDisplaySpace();
+              const hasLocalData = (boxes && boxes.length) || (lines && lines.length);
+              if (hasLocalData) {
+                const localPayload = createPersistedPayload();
+                setSyncState('Cloud trống, đang đẩy dữ liệu cũ...');
+                await window.top.__mobileViewSaveRemoteDocumentV8(localPayload);
+                await window.top.__mobileViewVerifyRemoteDocumentV8(localPayload);
+                setSyncState('Đã đẩy dữ liệu cũ lên cloud');
+              } else {
+                setSyncState('Cloud đang trống');
+              }
+              if (isUnifiedMobileViewer) fitMobileView(); else fitDesktopClassic();
+            } catch (error) {
+              console.error(error);
+              await classicLoadData();
+              runtimeDisplaySpace = getDisplaySpace();
+              setSyncState('Lỗi cloud, dùng dữ liệu máy này', true);
+              if (isUnifiedMobileViewer) fitMobileView(); else fitDesktopClassic();
+            }
+          };
+
+          saveData = async function() {
+            const payload = createPersistedPayload();
+            setSyncState('Đang lưu cloud...');
+            try {
+              const cleanPayload = await window.top.__mobileViewSaveRemoteDocumentV8(payload);
+              await window.top.__mobileViewVerifyRemoteDocumentV8(cleanPayload);
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleanPayload));
+              setDirty(false);
+              setSyncState('Đã lưu cloud');
+            } catch (error) {
+              console.error(error);
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+              setDirty(true);
+              setSyncState('Lỗi cloud, chỉ lưu máy này', true);
+            }
+          };
+
+          let autoSaveTimer = null;
+          const originalSetDirty = setDirty;
+          setDirty = function(value) {
+            originalSetDirty(value);
+            if (!value) return;
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(() => { if (isDirty) saveData(); }, 1200);
+          };
+        }
+      `);
+    }
+
+    function applyMode() {
+      const mobile = isMobileMode();
+      frameStage.classList.toggle('mobile-landscape', isPortraitMobile());
+      if (!editorWindowRef) return;
+      injectBaseStyles(editorWindowRef.document);
+      if (editorWindowRef.__setUnifiedMobileMode) {
+        editorWindowRef.__isUnifiedMobileMode = mobile;
+        editorWindowRef.__setUnifiedMobileMode(mobile);
+      }
+    }
+
+    window.__mobileViewGetViewportV8 = () => {
+      if (isPortraitMobile()) return { width: window.innerHeight, height: window.innerWidth };
+      return { width: window.innerWidth, height: window.innerHeight };
+    };
+    window.__mobileViewFetchRemoteDocumentV8 = fetchRemoteDocument;
+    window.__mobileViewSaveRemoteDocumentV8 = saveRemoteDocument;
+    window.__mobileViewVerifyRemoteDocumentV8 = verifyRemoteDocument;
+
+    window.addEventListener('touchmove', (event) => {
+      if (!isMobileMode()) return;
+      if (event.touches.length > 1) event.preventDefault();
+    }, { passive: false });
+
+    async function boot() {
+      try {
+        editorWindowRef = frame.contentWindow;
+        injectBaseStyles(editorWindowRef.document);
+        injectAlignmentPatch(editorWindowRef);
+        patchEditor(editorWindowRef);
+        await editorWindowRef.loadData();
+        applyMode();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    frame.addEventListener('load', boot);
+    window.addEventListener('resize', applyMode);
+    window.addEventListener('orientationchange', () => setTimeout(applyMode, 150));
+    loadEmbeddedEditor();
+  </script>
+</body>
+</html>
